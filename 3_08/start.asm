@@ -1,5 +1,5 @@
 section .bss
-buffer:		resb	2
+buf:		resb	2
 str:		resb	10
 
 section .text
@@ -8,12 +8,12 @@ _start:
 		; read number
 		mov	eax, 3		; sys_read
 		mov	ebx, 0		; stdin	
-		mov	ecx, buffer
+		mov	ecx, buf
 		mov	edx, 2		; number of bytes to read
 		int	0x80		; call kernel
 
 		; check if it's a digit. if it is, store it in al
-		mov	al, [buffer]	; get input character
+		mov	al, [buf]	; get input character
 		sub	al, '0'		; convert it to digit 
 		js	exit		; < 0
 		cmp	al, 10		; 
