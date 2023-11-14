@@ -1,5 +1,5 @@
 section .bss
-buffer	resb 2		; reserve 1 byte for a letter, and the second one for press enter
+buffer:	resb 2		; reserve 1 byte for a letter, and the second one for press enter
 
 section .data
 yes	db 'YES', 0xA	; followed by newline
