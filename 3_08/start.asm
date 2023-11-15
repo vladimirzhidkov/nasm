@@ -12,28 +12,32 @@ _start:
 		mov	edx, 2		; number of bytes to read
 		int	0x80		; call kernel
 
-		; check if it's a digit. if it is, store it in al
-		mov	al, [buf]	; get input character
-		sub	al, '0'		; convert it to digit 
-		js	exit		; < 0
-		cmp	al, 10		; 
-		jns	exit		; > 9
-
-		; create a string of '*' with length = AL. ECX is end of string
+		; check if it is [1-9]
 		xor	ecx, ecx
-loop:
-		cmp	cl, al
-		jz	done	
-		mov	byte[str + ecx], '*'
-		inc	ecx	
-		jmp	loop		
-done:	
-		mov	byte[str + ecx], 0xA	; newline character
-		inc	ecx			; length of str
+		mov	cl, [buf]	; get input character
+		cmp	cl, '1'		
+		jb	exit		; < 1
+		cmp	cl, '9'		
+		ja	exit		; > 9
+
+		; convert to number
+		sub	cl, '0'
+
+		; store number for later use in sys_write
+		mov	edx, ecx	
+
+		; create a string of '*' 
+		mov	edi, str
+		mov	al, '*'
+		cld
+lp:
+		stosb		; AL->[EDI]; inc EDI
+		loop	lp
+		mov	byte[edi], 0xa	; add newline to the end of str
+		inc	edx
 print:
 		mov	eax, 4		; sys_write
 		mov	ebx, 1		; stdout
-		mov	edx, ecx	; length
 		mov	ecx, str	; string to print 
 		int	0x80		; call kernel 	
 exit:
