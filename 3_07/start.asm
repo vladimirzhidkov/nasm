@@ -1,5 +1,6 @@
 section .bss
-buf:		resb	1
+LEN_BUF:	equ	3
+buf:		resb	LEN_BUF		; stdin buffer
 
 section .rodata
 YES		db	'YES', 0xA	
@@ -36,6 +37,6 @@ print_yes:	 mov	eax, 4		; sys_write
 		mov	edx, LEN_YES	; length
 		int	0x80
 		jmp	_start
-exit:		mov	ebx, 0	; return status
-		mov	eax, 1	; sys_exit
-		int	0x80	; call kernel 
+exit:		mov	ebx, 0		; return status
+		mov	eax, 1		; sys_exit
+		int	0x80	
