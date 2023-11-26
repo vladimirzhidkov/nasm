@@ -1,2 +1,2 @@
 # Exercise 3.07 
-Напишите программу, которая считывает один символ из стандартного потока ввода и печатает слово 'YES', если этот символ - заглавная латинская буква 'A'. В противном случае программа должна печатать 'NO'.
+Write a program that reads a single character from the standard input stream and prints the word YES if this character is the uppercase A, otherwise it prints NO.
