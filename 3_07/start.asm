@@ -1,5 +1,5 @@
 section .bss
-LEN_BUF:	equ	3
+LEN_BUF:	equ	1		; any > 0
 buf:		resb	LEN_BUF		; stdin buffer
 
 section .data
