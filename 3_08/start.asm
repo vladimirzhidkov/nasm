@@ -1,8 +1,6 @@
 section .bss
-LEN_BUF:	equ	4		; any > 0 
+LEN_BUF:	equ	2		; any > 1 
 buf:		resb	LEN_BUF		; buffer for stdin
-LEN_STR:	equ	10
-str:		resb	LEN_STR		; string of '*' up to 9 ending with NL character
 
 section .text
 global _start
@@ -28,23 +26,36 @@ chk_ln_end:	add	esi, eax	; update line length
 		jne	read_stdin
 		cmp	esi, 2		; line length
 		jne	_start		; input is not one character (excluding NL), so start over
-		cmp	edi, 0	
+		cmp	edi, 0		; input digit character
 		je	_start		; no digit was entered, so start over
-		;form string
 		sub	edi, '0'	; convert to number
-		mov	ecx, edi
-		mov	edx, edi	; for sys_write
-		mov	edi, str
-		mov	al, '*'
+		; just for fun, use existing buf to form and print output string
+		mov	esi, edi	; input single digit number
+print_nxt_buf:	cmp	esi, LEN_BUF
+		jb	last_buf	; the rest of string will fit into buf	
+		sub 	esi, LEN_BUF
+		mov	ecx, LEN_BUF	; for stosb
+		mov	edx, ecx	; for sys_write
+		jnz	form_str
+		inc	esi
+		dec	ecx
+		dec	edx
+		jmp	form_str	
+last_buf:	mov	ecx, esi	; for stosb	
+		xor	esi, esi	; length
+		mov	byte[buf+ecx], 0xa	; add NL character
+		mov	edx, ecx	; for sys_write
+		inc	edx
+form_str:	mov	al, '*'	
+		mov	edi, buf 
 		cld
 		rep	stosb
-		mov	byte[edi], 0xa
-		inc	edx
-		; print
-		mov	eax, 4
-		mov	ebx, 1
-		mov	ecx, str
+		mov	eax, 4		; sys_write
+		mov	ebx, 1		; stdout
+		mov	ecx, buf 
 		int	0x80	
+		test	esi, esi
+		jnz	print_nxt_buf		
 		jmp	_start
 exit:		mov	eax, 1		; sys_exit
 		mov	ebx, 0		; return status
