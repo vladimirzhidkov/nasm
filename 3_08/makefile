@@ -3,11 +3,11 @@
 OBJS = start.o
 AS = nasm
 LD = ld 
-ASFLAGS = -f elf 
+ASFLAGS = -f elf
 LDFLAGS = -m elf_i386
 
 ifdef DEBUG 
-ASFLAGS += -g -F dwarf 
+ASFLAGS += -g -F dwarf
 endif
 
 #Rules
