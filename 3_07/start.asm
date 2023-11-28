@@ -12,13 +12,17 @@ LEN_MSG:	equ	4		; 3 for YES/NO, 1 for NL character
 
 section .text
 global _start
-_start:		mov	eax, 3		; sys_read
+_start:		xor	esi, esi	; line length	
+		xor	edi, edi	; pointer to message (YES/NO) or 0 if freash read
+read_stdin:	mov	eax, 3		; sys_read
 		mov	ebx, 0		; stdin file descriptor
 		mov	ecx, buf
 		mov	edx, LEN_BUF	; number of bytes to read
 		int	0x80
 		test	eax, eax	; eax = input length
 		jz	exit		; EOF is reached 
+		add	esi, eax
+		cmp	edi	
 		mov	esi, buf	; iterate through buf
 read_nxt_char:	movzx	ebx, byte[esi]	; BL is input character
 		cmp	bl, 0xa
