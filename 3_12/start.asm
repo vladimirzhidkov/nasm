@@ -1,5 +1,5 @@
 section .bss
-LEN_BUF:	equ	10		; any > 0
+LEN_BUF:	equ	1		; any > 0
 buf:		resb	LEN_BUF	
 
 section .rodata
@@ -13,19 +13,11 @@ _start:		mov	eax, 3		; sys_read
 		mov	ecx, buf
 		mov	edx, LEN_BUF 
 		int	0x80
-		; check for EOF
-		test	eax, eax
+		test	eax, eax	; check for EOF
 		jz	exit	
-		; iterate through buf
-		mov	esi, buf
-		xor	ebx, ebx	; input character
-nxt_char:	mov	bl, [esi]
-		cmp	bl, 0xa
+		cmp	byte[buf+eax-1], 0xa	; check the last element for NL character
 		je	print_ok
-		inc	esi
-		dec	eax
-		jnz	nxt_char
-		jmp	_start		
+		jmp	_start
 print_ok:	mov	eax, 4		; sys_write
 		mov	ebx, 1		; stdout
 		mov	ecx, OK

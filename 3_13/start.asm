@@ -1,45 +1,35 @@
 section .bss
-buf:		resb	512
+LEN_BUF:	equ	1		; any > 0
+buf:		resb	LEN_BUF	
 
 section .text
 global _start
-_start:
-
-read:
-		mov	eax, 3		; sys_read
+_start:		xor	esi, esi	; char counter needed, so to detect and ignore empty lines (just looks nice)	
+read_stdin:	mov	eax, 3		; sys_read
 		mov	ebx, 0		; stdin
 		mov	ecx, buf
-		mov	edx, 512
+		mov	edx, LEN_BUF 
 		int	0x80
-
-		; check for EOF
-		test	eax, eax
+		test	eax, eax	; check for EOF
 		jz	exit
-
-		; save string length to edx for later use in print
-		mov	edx, eax
-
-		; form string of *
-		mov	ecx, eax
-		mov	edi, buf
+		add	esi, eax
+		mov	ecx, eax	; for stosb
+		mov	edx, eax	; for sys_write
+		cmp	byte[buf+ecx-1], 0xa	; check for NL character at the end
+		jne	form_str	
+		dec	esi
+		jz	read_stdin	
+		xor	esi, esi
+		dec	ecx		; exclude NL character
+form_str:	mov	edi, buf
 		mov	al, '*'
 		cld
-lp1:
-		stosb			; al->[edi]; inc edi
-		loop	lp1
-lp1_done:
-		mov	byte[edi], 0xa	; add newline
-		inc	edx
-print:
-		mov	eax, 4
+		rep stosb
+		mov	eax, 4		; sys_write
 		mov	ebx, 1		; stdout
 		mov	ecx, buf
-		; edx is set above
 		int	0x80
-		
-		; start over
-		jmp	read
-exit:
-		mov	eax, 1		; sys_exit
+		jmp	read_stdin	
+exit:		mov	eax, 1		; sys_exit
 		mov	ebx, 0		; return status
 		int	0x80
