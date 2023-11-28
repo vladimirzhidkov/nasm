@@ -1,5 +1,5 @@
 section .bss
-LEN_BUF:	equ	3		; could be any length but 0
+LEN_BUF:	equ	4		; any > 0 
 buf:		resb	LEN_BUF		; buffer for stdin
 LEN_STR:	equ	10
 str:		resb	LEN_STR		; string of '*' up to 9 ending with NL character
@@ -14,16 +14,14 @@ LEN_MSG_ERROR:	equ	$ - MSG_ERROR
 
 section .text
 global _start
-_start:		; read input
-		mov	eax, 3		; sys_read
+_start:		
+read_stdin:	mov	eax, 3		; sys_read
 		mov	ebx, 0		; stdin	
 		mov	ecx, buf
 		mov	edx, LEN_BUF
 		int	0x80
-		; check for EOF
-		test	eax, eax
+		test	eax, eax	; check for EOF
 		jz	exit	
-		; iterate through buf
 		xor	ebx, ebx	; input character
 		mov	esi, buf
 read_nxt_char:	movzx	ebx, byte[esi]
@@ -52,8 +50,7 @@ chk_for_err:	mov	ecx, [error]
 		jz	form_str	; there was no input errors
 		mov	edx, LEN_MSG_ERROR
 		jmp	sys_write
-form_str:	;xor	ecx, ecx	
-		movzx	ecx, byte[digit]
+form_str:	movzx	ecx, byte[digit]
 		sub	ecx, '0'
 		mov	edx, ecx
 		mov	eax, '*'
@@ -66,8 +63,7 @@ form_str:	;xor	ecx, ecx
 sys_write:	mov	eax, 4		; sys_write
 		mov	ebx, 1		; stdout
 		int	0x80
-		; reset 
-		mov	byte[digit], 0
+		mov	byte[digit], 0	; reset 
 		mov	dword[error], 0	
 		jmp	_start	
 exit:		mov	eax, 1		; sys_exit
