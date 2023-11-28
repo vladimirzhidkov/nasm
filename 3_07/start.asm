@@ -2,9 +2,6 @@ section .bss
 LEN_BUF:	equ	4		; any > 0
 buf:		resb	LEN_BUF		; stdin buffer
 
-section .data
-msg:		dd	0
-
 section .rodata
 YES:		db	'YES', 0xA	
 NO:		db	'NO ', 0xA
@@ -21,32 +18,26 @@ read_stdin:	mov	eax, 3		; sys_read
 		int	0x80
 		test	eax, eax	; eax = input length
 		jz	exit		; EOF is reached 
-		add	esi, eax
-		cmp	edi	
-		mov	esi, buf	; iterate through buf
-read_nxt_char:	movzx	ebx, byte[esi]	; BL is input character
-		cmp	bl, 0xa
-		je	print		; BL = NL character 	
-		cmp	dword[msg], 0	
-		jne	set_msg_no	; there was already input processed, so set NO
-		cmp	bl, 'A' 
-		jne	set_msg_no	; BL != 'A'
-		mov	dword[msg], YES 
-		jmp	next_iter
-set_msg_no:	mov	dword[msg], NO 
-next_iter:	inc	esi
-		dec	eax
-		jnz	read_nxt_char
-		jmp	_start	
-print:		mov	ecx, [msg]	
-		test	ecx, ecx
-		jnz	sys_write	; msg is not empty, so send it to stdout
-		mov	ecx, NO		; msg was empty
-sys_write:	mov	eax, 4		; sys_write
+		add	esi, eax	; update line length
+		test	edi, edi
+		jnz	test_nl		; message is set, not fresh read
+		cmp	byte[buf], 'A'	; check first buf element
+		jne	set_msg_no
+		mov	edi, YES	; first buf element is 'A'
+		jmp	test_nl
+set_msg_no:	mov	edi, NO	
+test_nl:	cmp	byte[buf+eax-1], 0xa	; check last buf element for NL character
+		jne	read_stdin
+		cmp	esi, 1		; check line length 
+		je	_start		; line length = 1 (empty line), so reset and start over
+		cmp	esi, 2
+		je	print
+		mov	edi, NO	
+print:		mov	eax, 4		; sys_write
 		mov	ebx, 1  	; stdout
+		mov	ecx, edi
 		mov	edx, LEN_MSG
 		int	0x80
-		mov	dword[msg], 0	; reset to  default msg 
 		jmp	_start	
 exit:		mov	eax, 1		; sys_exit
 		mov	ebx, 0		; return status
