@@ -1,5 +1,5 @@
 section .bss
-LEN_BUF:	equ	2		; any > 1 
+LEN_BUF:	equ	10		; don't change
 buf:		resb	LEN_BUF		; buffer for stdin
 
 section .text
@@ -29,34 +29,48 @@ chk_ln_end:	add	esi, eax	; update line length
 		cmp	edi, 0		; input digit character
 		je	_start		; no digit was entered, so start over
 		sub	edi, '0'	; convert to number
-		; just for fun, use existing buf to form and print output string
-		mov	esi, edi	; input single digit number
-print_nxt_buf:	cmp	esi, LEN_BUF
-		jb	last_buf	; the rest of string will fit into buf	
-		sub 	esi, LEN_BUF
-		mov	ecx, LEN_BUF	; for stosb
-		mov	edx, ecx	; for sys_write
-		jnz	form_str
-		inc	esi
-		dec	ecx
-		dec	edx
-		jmp	form_str	
-last_buf:	mov	ecx, esi	; for stosb	
-		xor	esi, esi	; length
-		mov	byte[buf+ecx], 0xa	; add NL character
-		mov	edx, ecx	; for sys_write
+		mov	edx, edi
+		mov	byte[buf+edi], 0xa	; NL character
 		inc	edx
-form_str:	mov	al, '*'	
-		mov	edi, buf 
 		cld
-		rep	stosb
+		mov	al, '*'
+		mov	ecx, edi
+		mov	edi, buf
+		rep stosb
 		mov	eax, 4		; sys_write
 		mov	ebx, 1		; stdout
-		mov	ecx, buf 
+		mov	ecx, buf
 		int	0x80	
-		test	esi, esi
-		jnz	print_nxt_buf		
 		jmp	_start
 exit:		mov	eax, 1		; sys_exit
 		mov	ebx, 0		; return status
 		int	0x80
+
+		; just for fun, use existing buf of any size to form and print output string
+;		mov	esi, edi	; input single digit number
+;print_nxt_buf:	cmp	esi, LEN_BUF
+;		jb	last_buf	; the rest of string will fit into buf	
+;		sub 	esi, LEN_BUF
+;		mov	ecx, LEN_BUF	; for stosb
+;		mov	edx, ecx	; for sys_write
+;		jnz	form_str
+;		inc	esi
+;		dec	ecx
+;		dec	edx
+;		jmp	form_str	
+;last_buf:	mov	ecx, esi	; for stosb	
+;		xor	esi, esi	; length
+;		mov	byte[buf+ecx], 0xa	; add NL character
+;		mov	edx, ecx	; for sys_write
+;		inc	edx
+;form_str:	mov	al, '*'	
+;		mov	edi, buf 
+;		cld
+;		rep	stosb
+;		mov	eax, 4		; sys_write
+;		mov	ebx, 1		; stdout
+;		mov	ecx, buf 
+;		int	0x80	
+;		test	esi, esi
+;		jnz	print_nxt_buf		
+;		jmp	_start
