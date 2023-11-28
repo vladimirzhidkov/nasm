@@ -1,5 +1,5 @@
 section .bss
-LEN_BUF:	equ	2		; any > 1	
+LEN_BUF:	equ	4		; any > 1	
 buf:		resb	LEN_BUF		
 
 section .data
@@ -10,25 +10,21 @@ section .text
 global _start
 _start:		mov	byte[plus_count], 0
 		mov	byte[minus_count], 0	
-read_stdin:	; read input
-		mov	eax, 3		; sys_read
+read_stdin:	mov	eax, 3		; sys_read
 		mov	ebx, 0		; stdin
 		mov	ecx, buf
 		mov	edx, LEN_BUF 
 		int	0x80
-		; check for EOF
-		test	eax, eax	; holds number or characters or 0 for EOF
+		test	eax, eax	; input length or 0 for EOF
 		jz	exit
-		; iterate through buf
-		; eax = input length
-		mov	esi, buf
-read_nxt_char:	movzx	ebx, byte[esi]
-		cmp	ebx, 0xa
-		je	calc_prod	; EBX = NL character	
-		cmp	ebx, '+'
-		je	inc_plus_count	; EBX = '+'
-		cmp	ebx, '-'
-		je	inc_minus_count	; EBX = '-'
+		mov	esi, buf	; iterate through buf
+read_nxt_char:	mov	bl, byte[esi]
+		cmp	bl, 0xa
+		je	calc_prod	; BL = NL character	
+		cmp	bl, '+'
+		je	inc_plus_count	; BL = '+'
+		cmp	bl, '-'
+		je	inc_minus_count	; BL = '-'
 		jmp	nxt_iter
 inc_plus_count:	inc	byte[plus_count]
 		jmp	nxt_iter
@@ -39,6 +35,8 @@ nxt_iter:	inc	esi
 		jmp	read_stdin	
 calc_prod:	mov	al, [plus_count]
 		mul	byte[minus_count]	; product->AX = total length
+		test	eax, eax
+		jz	_start
 		; split total length into series of bufs
 nxt_buf:	cmp	eax, LEN_BUF-1	; reserve 1 spot for NL char
 		jbe	last_buf	
@@ -52,12 +50,10 @@ last_buf:	mov	ecx, eax	; char counter for stosb use
 		mov	edx, ecx	; char counter for sys_write use
 		inc	edx
 fill_buf:	push	eax		; save total length left
-		; form string
-		mov	al, '*'	
+		mov	al, '*'		; form string of *
 		mov	edi, buf
 		cld
 		rep stosb 
-		; write to stdout
 		mov	eax, 4		; sys_write 
 		mov	ebx, 1		; stdout
 		mov	ecx, buf
