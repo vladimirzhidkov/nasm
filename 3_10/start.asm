@@ -35,22 +35,21 @@ nxt_iter:	inc	esi
 		jmp	read_stdin	
 calc_prod:	mov	al, [plus_count]
 		mul	byte[minus_count]	; product->AX = total length
-		test	eax, eax
+		mov	esi, eax
+nxt_buf:	test	esi, esi 
 		jz	_start
-		; split total length into series of bufs
-nxt_buf:	cmp	eax, LEN_BUF-1	; reserve 1 spot for NL char
+		cmp	esi, LEN_BUF-1	; reserve 1 spot for NL char
 		jbe	last_buf	
-		sub	eax, LEN_BUF-1	; reduce total length left (reserve 1 spot for NL char)
+		sub	esi, LEN_BUF-1	; reduce total length left (reserve 1 spot for NL char)
 		mov	ecx, LEN_BUF-1	; char counter for stosb use (reserve 1 spot for NL char) 
 		mov	edx, ecx	; char counter for sys_write use
 		jmp	fill_buf	
-last_buf:	mov	ecx, eax	; char counter for stosb use 
-		xor	eax, eax	; clear total length left
+last_buf:	mov	ecx, esi	; char counter for stosb use 
+		xor	esi, esi	; clear total length left
 		mov	byte[buf+ecx], 0xa	; add NL character
 		mov	edx, ecx	; char counter for sys_write use
 		inc	edx
-fill_buf:	push	eax		; save total length left
-		mov	al, '*'		; form string of *
+fill_buf:	mov	al, '*'		; form string of *
 		mov	edi, buf
 		cld
 		rep stosb 
@@ -58,10 +57,7 @@ fill_buf:	push	eax		; save total length left
 		mov	ebx, 1		; stdout
 		mov	ecx, buf
 		int	0x80 
-		pop	eax		; restore total length left
-		test	eax, eax
-		jnz	nxt_buf
-		jmp	_start
+		jmp	nxt_buf
 exit:		mov	eax, 1		; sys_exit
 		mov	ebx, 0		; return status
 		int	0x80
