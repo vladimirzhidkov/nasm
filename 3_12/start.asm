@@ -1,5 +1,5 @@
 section .bss
-LEN_BUF:	equ	1		; any > 0
+LEN_BUF:	equ	4		; any > 0
 buf:		resb	LEN_BUF	
 
 section .rodata
