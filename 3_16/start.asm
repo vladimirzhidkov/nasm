@@ -1,79 +1,69 @@
 section .bss
-buf:		resb	512
+LEN_BUF:	equ	8
+buf:		resb	LEN_BUF
+
+section .data
+wc:		dd	0		; word count
 
 section .text
 global _start
-_start:
-		; read stdin
-		mov 	eax, 3		; sys_read
+_start:		mov	dword[wc], 0	
+		xor	edi, edi	; current word length
+read_next_buf:	mov 	eax, 3		; sys_read
 		mov	ebx, 0		; stdin
 		mov	ecx, buf
-		mov	edx, 512
+		mov	edx, LEN_BUF 
 		int	0x80
-
-		; check for EOF
 		test	eax, eax
 		jz	exit
-
-		; iterate through line
-		; al is current character
-		; ebx is current word length
-		; ecx is loop counter
-		; edx is word counter
-		xor	ebx, ebx
-		mov	ecx, eax	; loop counter
-		xor	edx, edx
+		; iterate through input line
 		mov	esi, buf
-		cld
-lp1:		lodsb			
-		; al is current character
-		; if al == ' ' || al == '\n'		
-		; 	count word (edx)
-		; else
-		; 	increment current word length (ebx)
-		cmp	al, ' '
-		jnz	or
-		jmp	then	
-or:		cmp	al, 0xa		; newline
-		jnz	else
-then:		; count word
-		; if ebx != 0  
-		;	increment word counter (edx)
-		;	reset current word length (ebx)
-		; else
-		;	go to next iteration 
-		test	ebx, ebx
-		jz	next
+read_next_char:	mov	bl, [esi]
+		cmp	bl, 0xa
+		jz	end_line
+		cmp	bl, ' '
+		jnz	update_word_len	
+		call	count_word
+		jmp	next_iter
+update_word_len:inc	edi		; current word length
+next_iter:	inc	esi
+		dec	eax
+		jnz	read_next_char
+		jmp	read_next_buf
+end_line:	call	count_word
+		call	print_asterisk
+		jmp	_start	
+exit:		mov	eax, 1		; sys_exit
+		mov	ebx, 0		; return status 
+		int	0x80
+; increases word count [wc] if word is not empty
+count_word:	test	edi, edi	; current word length
+		jz	.done
+		inc	dword[wc]	
+		xor	edi, edi
+.done:		ret	
+; prints [wc] long line of asterisks
+print_asterisk:	mov	esi, [wc]
+.next_buf:	test	esi, esi
+		jz	.done
+		cmp	esi, LEN_BUF-1
+		jbe	.last_buf
+		sub	esi, LEN_BUF-1
+		mov	ecx, LEN_BUF-1
+		mov	edx, ecx 
+		jmp	.form_str	
+.last_buf:	mov	ecx, esi	; for stosb 
+		mov	edx, esi	; for sys_write	
+		mov	byte[buf+edx], 0xa	; print NL
 		inc	edx
-		xor	ebx, ebx
-		jmp	next	
-else:		; increment current word length
-		inc	ebx
-next:		loop	lp1
-
-		; form string of * with length of word counter (edx)
-		; al is '*'
-		; ecx is loop counter
-		; edx is length
-		mov	al, '*'
-		mov	ecx, edx
-		jecxz	_start		; if word counter is 0, start all over		
+		xor	esi, esi	
+.form_str:	cld
 		mov	edi, buf
-		cld
-lp2:		stosb
-		loop	lp2	
-		; add newline character
-		mov	[edi], byte 0xa	
-		inc	edx
-		
-		; print string of * to stdout
+		mov	al, '*'
+		rep	stosb
 		mov	eax, 4		; sys_write
 		mov	ebx, 1		; stdout
 		mov	ecx, buf
-		; edx was set above
 		int	0x80
-		jmp	_start
-exit:
-		mov	eax, 1		; sys_exit
-		mov	ebx, 0		; return status 
-		int	0x80		; call kernel
+		jmp	.next_buf
+.done:		ret
