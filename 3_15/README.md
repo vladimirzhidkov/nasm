@@ -1,0 +1,2 @@
+# Exercise 3.15
+Write a program that reads text from the standard input stream until an 'end-of-file' condition occurs, and in response to each line entered by the user, prints the word YES if the line has a balanced set of parentheses, and NO otherwise. The balance of parentheses is considered maintained if the number of opening parentheses matches the number of closing parentheses, and at no point in the line does the number of encountered closing parentheses exceed the number of encountered opening parentheses.
