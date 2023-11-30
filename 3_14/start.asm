@@ -1,5 +1,5 @@
 section .bss
-LEN_BUF:	equ	2		; any > 1	
+LEN_BUF:	equ	64		; any > 1	
 buf:		resb	LEN_BUF	
 
 section .data
@@ -10,6 +10,7 @@ section .text
 global _start
 _start:		mov	dword[len_longest], 0	
 		mov	dword[len_last], 0
+		xor	edi, edi	; current word length
 read_stdin:	mov	eax, 3		; sys_read
 		mov	ebx, 0		; stdin
 		mov	ecx, buf 
@@ -17,25 +18,23 @@ read_stdin:	mov	eax, 3		; sys_read
 		int	0x80
 		test	eax, eax	; check for EOF
 		jz	exit
-		mov	ecx, eax	
-		mov	al, ' '
-		mov	edi, buf
-scan:		mov	edx, ecx	; # characters left in buf
-		repne	scasb		; scan buf and stop when find blank
-		jz	end_of_word	; blank found
-		cmp	byte[edi-1], 0xa	; check last input character for NL
-		je	end_of_word	
-		add	esi, edx
+		; iterate through input
+		mov	esi, buf
+read_next_char:	mov	bl, [esi]
+		cmp	bl, ' '
+		jnz	chk_NL	
+		call	word_end
+		xor	edi, edi
+		jmp	next_iter
+chk_NL:		cmp	bl, 0xa
+		jz	line_end		
+		inc	edi
+next_iter:	inc	esi
+		dec	eax
+		jnz	read_next_char
 		jmp	read_stdin	
-end_of_word:	sub	edx, ecx	; calc length
-		dec	edx		; exclude blank or NL
-		add	esi, edx	; total length of current word	
-		call	end_word	
-		xor	esi, esi	; reset word length
-		cmp	byte[edi-1], 0xa	; check last input character for NL
-		je	print
-		jmp	scan	
-print:		mov	esi, [len_longest]
+line_end:	call	word_end
+		mov	esi, [len_longest]
 		call	print_asterisk
 		mov	esi, [len_last]
 		call	print_asterisk
@@ -44,12 +43,12 @@ exit:		mov	eax, 1		; sys_exit
 		mov	ebx, 0		; return status
 		int	0x80
 
-word_end:	test	esi, esi
-		jz	.done
-		mov	[len_last], esi
-		cmp	esi, [len_longest]
-		jbe	.done
-		mov	[len_longest], esi
+word_end:	test	edi, edi
+		jz	.done	
+		mov	[len_last], edi
+		cmp	edi, [len_longest]
+		jbe	.done	
+		mov	[len_longest], edi
 .done:		ret
 
 print_asterisk:	test	esi, esi
