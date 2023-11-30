@@ -1,68 +1,59 @@
 section .bss
-line:		resb	512
+LEN_BUF:	equ	8
+buf:		resb	LEN_BUF	
 
 section .data
-yes:		db	"YES", 0xa
-len_yes:	equ	$ - yes
-no:		db	"NO", 0xa
-len_no:		equ	$ - no
+len_line:	dd	0
+
+section .rodata
+MSG_YES:	db	"YES", 0xa
+MSG_NO:		db	"NO ", 0xa
+LEN_MSG:		equ	4	
 
 section .text
 global _start
-_start:
-		; read line from stdin
-		mov	eax, 3		; sys_read
+_start:		xor	edi, edi	; paren balance ( 0 = balanced, any other = not balanced)
+		mov	dword[len_line], 0	; current line length, needed to detect empty line
+read_stdin:	mov	eax, 3		; sys_read
 		mov	ebx, 0		; stdin
-		mov	ecx, line
-		mov	edx, 512
+		mov	ecx, buf 
+		mov	edx, LEN_BUF 
 		int	0x80
-
-		; check for EOF
-		test	eax, eax
+		test	eax, eax	; check for EOF
 		jz	exit
-
-		; iterate through line
-		; al is current character
-		; ebx is paren accumulator. +1 for '(', -1 for ')' 
-		; ecx is line length
-		mov	esi, line
-		cld
-		mov	ecx, eax	
-		xor	ebx, ebx	
-loop:		lodsb			; [esi]->al; inc esi
-
-		; if al == '(' then inc ebx
-		cmp	al, '('
-		jnz	if_cp	
-		inc	ebx
-		jmp	if_no_bal	
-if_cp:		; if al == ')' then dec ebx
-		cmp	al, ')'	
-		jnz	next
-		dec	ebx
-if_no_bal:	; if ebx < 0 then parens are unbalanced. so print NO 
-		cmp	ebx, 0
-		jl	print_no	
-next:		loop	loop
-
-		; if ebx != 0 then print NO
-		test	ebx, ebx
-		jnz	print_no
-
-print_yes:	mov	eax, 4		; sys_write
+		add	[len_line], eax
+		; iterate through input line
+		mov	esi, buf
+read_next_char:	mov	bl, [esi]
+		cmp	bl, 0xa		; NL char
+		jz	line_end
+		test	edi, edi
+		js	next_iter	; if edi < 0, closing paren comes before opening one	
+		cmp	bl, '('
+		jz	opening_paren
+		cmp	bl, ')'
+		jz	closing_paren
+		jmp	next_iter
+opening_paren:	inc	edi
+		jmp	next_iter
+closing_paren:	dec	edi
+		jmp	next_iter
+next_iter:	inc	esi
+		dec	eax
+		jnz	read_next_char
+		jmp	read_stdin
+line_end:	cmp	dword[len_line], 1
+		jz	_start	
+		test	edi, edi			
+		jz	print_yes
+print_no:	mov	ecx, MSG_NO
+		jmp	write
+print_yes:	mov	ecx, MSG_YES
+write:		mov	eax, 4		; sys_write
 		mov	ebx, 1		; stdout
-		mov	ecx, yes 
-		mov	edx, len_yes
-		int	0x80
+		mov	edx, LEN_MSG
+		int	0x80 
 		jmp	_start
-
-print_no:	mov	eax, 4		; sys_write
-		mov	ebx, 1		; stdout
-		mov	ecx, no
-		mov	edx, len_no
-		int	0x80
-		jmp	_start
-exit:
-		mov	eax, 1		; sys_exit
+exit:		mov	eax, 1		; sys_exit
 		mov	ebx, 0		; return status
 		int	0x80		; call kernel
