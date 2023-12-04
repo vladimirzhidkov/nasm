@@ -1,35 +1,39 @@
 section .bss
-buf		resb	512
+LEN_BUF:	equ	11		; can hold upto 4bln
+buf:		resb	LEN_BUF
 
 section .text
 global _start
-_start:		mov	eax, 3		; sys_read
+_start:		xor	esi, esi	; char counter	
+read_stdin:	mov	eax, 3		; sys_read
 		mov	ebx, 0		; stdin
 		mov	ecx, buf
-		mov	edx, 512
+		mov	edx, LEN_BUF 
 		int	0x80
+		add	esi, eax
 		test	eax, eax	; check for EOF
-		jz	exit
-		mov	ebx, 10
-		mov	edi, buf + 10	; will be storing digit characters in reverse
-		mov	[edi], byte 0xa	; newline character
+		jnz	read_stdin	
+		mov	eax, esi	; quotient
+		mov	esi, 10		; divisor
+		mov	edi, buf+LEN_BUF-1
+		mov	byte[edi], 0xa
 		dec	edi
-		mov	ecx, 1
-lp1:		xor	edx, edx
-		div	ebx
-		add	edx, '0'
-		mov	[edi], dl
+		mov	ecx, 1		; char counter
+divide:		xor	edx, edx	; remainder
+		div	esi		; divide by 10
+		mov	ebx, '0'
+		add	ebx, edx
+		mov	[edi], bl
 		dec	edi
 		inc	ecx
 		test	eax, eax
-		jnz	lp1
-		inc	edi	
+		jnz	divide	
+print:		inc	edi	
 		mov	eax, 4		; sys_write
-		mov	ebx, 1		; stdout
+		mov	ebx, 2		; stdout
 		mov	edx, ecx
 		mov	ecx, edi 
-		int	0x80		; call kernel
-		jmp	_start	
+		int	0x80
 exit:		mov	eax, 1		; sys_exit
 		mov	ebx, 0		; return status
 		int	0x80		; call kernel

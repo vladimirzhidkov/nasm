@@ -1,2 +1,3 @@
 #!/bin/bash
-./a.out | wc -c
+./a.out < start.asm 
+wc -c start.asm
