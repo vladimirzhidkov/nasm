@@ -1,0 +1,2 @@
+# Excercise 3.18
+Write a program that reads the decimal representation of a non-negative integer from the standard input stream. The reading should be done one digit at a time, until a character that is not a digit is read, or an 'end-of-file' condition occurs. At the end of reading the number, the program should output as many asterisks as the number that was entered, and then finish the output with a newline character. You may ignore overflow - a situation where the user-entered number does not fit into a 32-bit register or variable.
