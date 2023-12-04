@@ -1,25 +1,29 @@
-OBJS = start.o
+ #-*- Makefile -*-
 
+EXEC = a.out
+OBJS = start.o
 AS = nasm
 LD = ld 
-
-# nasm -f elf hello5.asm
-# ld -m elf_i386 hello5.o -o hello5.out
-ASFLAGS = -f elf -g -F dwarf 
+ASFLAGS = -f elf
 LDFLAGS = -m elf_i386
 
+ifdef DEBUG 
+ASFLAGS += -g -F dwarf
+endif
+
 #Rules
+default:
+	./build_debug.sh
 
-# defaut: link run
+release: 
+	./build_release.sh
 
-a.out: $(OBJS)
-	$(LD) $(LDFLAGS) $(OBJS) -o a.out
+$(EXEC): $(OBJS)
+	$(LD) $(LDFLAGS) $(OBJS) -o $(EXEC)
 
-# pattern rules
-# @ is target
-# < is dependency
+# pattern rule, @ is target, < is dependency
 %.o: %.asm
-	$(AS) $(ASFLAGS) $< -o $@
+	$(AS) $(ASFLAGS) -o $@ $<
 
 clean:
 	find . -type f -name "*.o" -exec rm -f {} \;
