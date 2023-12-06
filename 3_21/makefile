@@ -4,26 +4,25 @@ EXEC = a.out
 OBJS = start.o
 AS = nasm
 LD = ld 
-ASFLAGS = -f elf
-LDFLAGS = -m elf_i386
+AS_FLAGS = -f elf
+LD_FLAGS = -m elf_i386
 
 ifdef DEBUG 
-ASFLAGS += -g -F dwarf
+AS_FLAGS += -g -F dwarf
 endif
 
 #Rules
 default:
-	./build_debug.sh
-
+	make $(EXEC) DEBUG=1
 release: 
-	./build_release.sh
+	make clean $(EXEC) DEBUG=
 
 $(EXEC): $(OBJS)
-	$(LD) $(LDFLAGS) $(OBJS) -o $(EXEC)
+	$(LD) $(LD_FLAGS) $(OBJS) -o $(EXEC)
 
 # pattern rule, @ is target, < is dependency
 %.o: %.asm
-	$(AS) $(ASFLAGS) -o $@ $<
+	$(AS) $(AS_FLAGS) -o $@ $<
 
 clean:
 	find . -type f -name "*.o" -exec rm -f {} \;
