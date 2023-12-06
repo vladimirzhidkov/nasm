@@ -1,7 +1,7 @@
  #-*- Makefile -*-
 
 EXEC = a.out
-OBJS = start.o
+OBJS = start.o fill_mem.o
 AS = nasm
 LD = ld 
 AS_FLAGS = -f elf
